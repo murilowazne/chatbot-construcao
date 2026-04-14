@@ -1,153 +1,263 @@
-// Guarda o estado de cada conversa (por número de telefone)
 const estados = {};
 
-// Horário de atendimento: seg-sex 8h-18h (fuso de Brasília)
 function dentroDoHorario() {
   const agora = new Date();
-  const options = { timeZone: 'America/Sao_Paulo', hour: 'numeric', minute: 'numeric', weekday: 'short' };
+  const options = { timeZone: 'America/Sao_Paulo', hour: 'numeric', weekday: 'short' };
   const partes = new Intl.DateTimeFormat('pt-BR', options).formatToParts(agora);
-  const dia = partes.find(p => p.type === 'weekday').value; // 'seg', 'ter'...
+  const dia = partes.find(p => p.type === 'weekday').value;
   const hora = parseInt(partes.find(p => p.type === 'hour').value);
   const fimDeSemana = dia === 'sáb' || dia === 'dom';
   return !fimDeSemana && hora >= 8 && hora < 18;
 }
 
-function saudacao() {
-  return `Olá! Seja bem-vindo à *Pretex Engenharia e Construção*. 🏗️
+function menu() {
+  return `Olá! Bem-vindo à *Pretex Estruturas*. 🏗️
 
-Sou o assistente virtual da Pretex e estou aqui para agilizar seu atendimento. Como posso te ajudar hoje?
+Sou o *PretexBot*, seu assistente para soluções em engenharia. Como posso te ajudar hoje?
 
-1️⃣ Solicitar um Orçamento
-2️⃣ Conhecer nossos Serviços
-3️⃣ Ver Obras Realizadas (Portfólio)
-4️⃣ Falar com um Consultor`;
+1️⃣ Catálogo de Soluções
+2️⃣ Status da Obra
+3️⃣ Galeria de Projetos
+4️⃣ Solicitar Orçamento
+5️⃣ Falar com Consultor`;
 }
 
 function foraDeHorario() {
-  return `Olá! Você entrou em contato com a *Pretex Engenharia e Construção*. 👷‍♂️
+  return `Olá! Você entrou em contato com a *Pretex Estruturas*. 👷
 
-No momento nosso time técnico não está online.
+No momento nosso time não está online.
 🕐 Atendemos de *segunda a sexta, das 08h às 18h*.
 
-Deixe sua dúvida e seu e-mail abaixo que entraremos em contato assim que iniciarmos o expediente!`;
+Deixe sua dúvida e e-mail que retornamos assim que iniciarmos o expediente!`;
 }
 
 function processar(mensagem, de) {
-  // Fora do horário: só aceita a primeira mensagem com aviso
   if (!dentroDoHorario() && !estados[de]) {
     estados[de] = 'fora_horario';
     return foraDeHorario();
   }
 
-  // Inicializa estado se for novo contato
-  if (!estados[de]) {
+  if (!estados[de] ||
+      mensagem === 'menu' ||
+      mensagem === 'voltar' ||
+      mensagem === 'início' ||
+      mensagem === 'inicio') {
     estados[de] = 'menu';
-    return saudacao();
+    return menu();
   }
 
   const estado = estados[de];
 
-  // --- MENU PRINCIPAL ---
-  if (estado === 'menu' || mensagem.includes('menu') || mensagem.includes('voltar')) {
-    if (mensagem === '1' || mensagem.includes('orçamento') || mensagem.includes('orcamento')) {
-      estados[de] = 'orcamento_nome';
-      return `Perfeito! Para que nosso engenheiro possa te dar um retorno preciso, preciso de algumas informações. 📋
+  // ==================== MENU PRINCIPAL ====================
+  if (estado === 'menu') {
 
-*Qual o seu nome e cidade?*`;
-    }
-
-    if (mensagem === '2' || mensagem.includes('serviço') || mensagem.includes('servico') || mensagem.includes('serviços')) {
+    // OPÇÃO 1 — Catálogo
+    if (mensagem === '1' || mensagem.includes('catálogo') || mensagem.includes('catalogo') || mensagem.includes('serviço') || mensagem.includes('servico')) {
       estados[de] = 'menu';
-      return `A *Pretex Engenharia* atua em:
+      return `Na *Pretex*, unimos estruturas de concreto e metálicas para entregar obras rápidas e de alta performance. 💪
 
-🏠 *Reformas residenciais* — cozinha, banheiro, ambientes completos
-🧱 *Alvenaria* — construção de muros, paredes, ampliações
-🎨 *Acabamento* — pintura, revestimentos, pisos e tetos
-🔧 *Hidráulica e elétrica* — instalações e manutenções
-🏢 *Obras comerciais e industriais*
+🌾 *Obras Rurais*
+Barracões de grãos, garagens de maquinário, salas de ordenha, aviários e confinamentos.
 
-Quer solicitar um orçamento para algum desses serviços? Digite *1* para continuar.`;
+🏢 *Comercial e Residencial*
+Barracões comerciais e projetos de uso misto (comércio + residência).
+
+🏭 *Obras Industriais*
+Projetos personalizados e execução ágil para todos os setores da indústria.
+
+Deseja ver fotos ou falar com um consultor?
+
+3️⃣ Ver Galeria de Projetos
+5️⃣ Falar com Consultor
+0️⃣ Voltar ao menu`;
     }
 
-    if (mensagem === '3' || mensagem.includes('portfólio') || mensagem.includes('portfolio') || mensagem.includes('obras')) {
-      estados[de] = 'portfolio';
-      return `Trabalhamos com excelência em cada detalhe! ✨
+    // OPÇÃO 2 — Status da obra
+    if (mensagem === '2' || mensagem.includes('status') || mensagem.includes('obra')) {
+      estados[de] = 'status_cpf';
+      return `Legal! Vamos verificar o andamento da sua estrutura. 🏗️
 
-Confira nossas obras em:
-🌐 Site: pretex.com.br/portfolio
-📸 Instagram: @pretex_engenharia
-
-Gostaria de agendar uma visita em alguma obra nossa em andamento?
-
-1️⃣ Sim, quero agendar uma visita
-2️⃣ Voltar ao menu principal`;
+Para localizar seu projeto, digite o *CPF ou CNPJ* do titular do contrato (apenas números):`;
     }
 
-    if (mensagem === '4' || mensagem.includes('consultor') || mensagem.includes('humano') || mensagem.includes('atendente')) {
-      estados[de] = 'menu';
-      return `Entendido! Estou transferindo você para um de nossos especialistas. 👷
+    // OPÇÃO 3 — Galeria
+    if (mensagem === '3' || mensagem.includes('galeria') || mensagem.includes('portfólio') || mensagem.includes('portfolio') || mensagem.includes('foto')) {
+      estados[de] = 'galeria';
+      return `Orgulhamo-nos de entregar estruturas que unem força e inovação. 📸
 
-⏱️ O tempo médio de resposta é de *até 30 minutos* em horário comercial.
+O que você gostaria de visualizar?
 
-Enquanto isso, sinta-se à vontade para enviar *fotos ou plantas* do seu terreno/imóvel aqui no chat!`;
+1️⃣ Obras Rurais (Barracões e Silos)
+2️⃣ Obras Industriais (Plantas e Logística)
+3️⃣ Comercial e Misto (Lojas e Residências)
+4️⃣ Ver tudo no Instagram`;
     }
 
-    // Mensagem não reconhecida no menu
+    // OPÇÃO 4 — Orçamento
+    if (mensagem === '4' || mensagem.includes('orçamento') || mensagem.includes('orcamento') || mensagem.includes('preço') || mensagem.includes('preco')) {
+      estados[de] = 'orcamento_finalidade';
+      return `Inicie seu orçamento sem compromisso! Em menos de 2 minutos coletamos os dados e encaminhamos para nossos engenheiros. 📝
+
+*Qual a finalidade da obra?*
+Ex: Barracão rural, galpão industrial, loja comercial...`;
+    }
+
+    // OPÇÃO 5 — Consultor
+    if (mensagem === '5' || mensagem.includes('consultor') || mensagem.includes('humano') || mensagem.includes('atendente')) {
+      estados[de] = 'consultor_nome';
+      return `Com certeza! Vou te conectar com um de nossos consultores. 🤝
+
+Antes, qual o seu *nome* e sobre qual *assunto* você gostaria de falar?`;
+    }
+
+    // Não reconhecido
     estados[de] = 'menu';
-    return saudacao();
+    return menu();
   }
 
-  // --- FLUXO DE ORÇAMENTO ---
-  if (estado === 'orcamento_nome') {
-    estados[de] = 'orcamento_tipo';
-    return `Obrigado! 😊
+  // ==================== STATUS DA OBRA ====================
+  if (estado === 'status_cpf') {
+    estados[de] = 'menu';
+    return `Obrigado! Vamos verificar seu projeto com o documento informado. 🔍
 
-*Qual o tipo de obra?*
+Nossa equipe vai confirmar os dados e te retornar em breve com o status atualizado da sua obra.
 
-1️⃣ Residencial
-2️⃣ Comercial
-3️⃣ Industrial`;
+Digite *menu* para voltar ao início.`;
   }
 
-  if (estado === 'orcamento_tipo') {
+  // ==================== GALERIA ====================
+  if (estado === 'galeria') {
+    if (mensagem === '1' || mensagem.includes('rural') || mensagem.includes('barracão') || mensagem.includes('silo')) {
+      estados[de] = 'menu';
+      return `🌾 *Obras Rurais — Pretex*
+
+Barracões de alto vão livre, otimizados para maquinário e armazenamento de grãos. Rapidez na montagem e durabilidade máxima.
+
+📸 Veja mais projetos rurais:
+- Instagram: instagram.com/pretexestruturas
+- Site: pretex.com.br
+
+Gostaria de solicitar um orçamento para uma obra rural?
+
+4️⃣ Solicitar Orçamento
+0️⃣ Voltar ao menu`;
+    }
+
+    if (mensagem === '2' || mensagem.includes('industrial') || mensagem.includes('indústria') || mensagem.includes('industria')) {
+      estados[de] = 'menu';
+      return `🏭 *Obras Industriais — Pretex*
+
+Estruturas de alta capacidade para os mais diversos setores da indústria. Projetos personalizados com execução ágil.
+
+📸 Veja mais projetos industriais:
+- Instagram: instagram.com/pretexestruturas
+- Site: pretex.com.br
+
+Gostaria de solicitar um orçamento?
+
+4️⃣ Solicitar Orçamento
+0️⃣ Voltar ao menu`;
+    }
+
+    if (mensagem === '3' || mensagem.includes('comercial') || mensagem.includes('misto') || mensagem.includes('loja')) {
+      estados[de] = 'menu';
+      return `🏢 *Obras Comerciais e Mistas — Pretex*
+
+Barracões comerciais e projetos que unem o melhor do comercial e residencial. Soluções completas para o seu negócio.
+
+📸 Veja mais projetos:
+- Instagram: instagram.com/pretexestruturas
+- Site: pretex.com.br
+
+Gostaria de solicitar um orçamento?
+
+4️⃣ Solicitar Orçamento
+0️⃣ Voltar ao menu`;
+    }
+
+    if (mensagem === '4' || mensagem.includes('instagram')) {
+      estados[de] = 'menu';
+      return `📸 Confira todos os nossos projetos no Instagram:
+
+👉 instagram.com/pretexestruturas
+
+E também no nosso site:
+🌐 pretex.com.br
+
+Digite *menu* para voltar ao início.`;
+    }
+
+    estados[de] = 'menu';
+    return menu();
+  }
+
+  // ==================== ORÇAMENTO ====================
+  if (estado === 'orcamento_finalidade') {
+    estados[de] = 'orcamento_cidade';
+    return `Ótimo! 
+
+*Qual a cidade e estado da construção?*
+Ex: Cascavel/PR, Londrina/PR...
+
+_(Isso define logística e normas de vento da região)_`;
+  }
+
+  if (estado === 'orcamento_cidade') {
+    estados[de] = 'orcamento_area';
+    return `Perfeito!
+
+*Qual a área aproximada da obra?*
+Ex: 20x50m, 600m², 1000m²...
+
+_Não sabe ao certo? Coloque uma estimativa que nossos consultores te ajudam a definir o tamanho ideal._`;
+  }
+
+  if (estado === 'orcamento_area') {
     estados[de] = 'orcamento_projeto';
-    return `Entendido! Última pergunta:
+    return `Anotado! 
 
-*Você já possui o projeto em mãos ou precisa que a Pretex desenvolva?*
+*Você já possui o projeto arquitetônico?*
 
-1️⃣ Já tenho o projeto
-2️⃣ Preciso que a Pretex desenvolva
+1️⃣ Sim, já tenho o projeto
+2️⃣ Não, preciso desenvolver
 3️⃣ Ainda não sei`;
   }
 
   if (estado === 'orcamento_projeto') {
-    estados[de] = 'menu';
-    return `Perfeito! Suas informações foram registradas com sucesso. ✅
+    estados[de] = 'orcamento_arquivo';
+    return `Quase lá! 📎
 
-Um de nossos engenheiros entrará em contato em breve para dar sequência ao seu orçamento.
+Se você tiver um *esboço, planta ou foto do terreno*, pode enviar agora. Isso ajuda muito nossa equipe a preparar uma estimativa mais precisa!
 
-⏱️ Tempo médio de retorno: *até 1 dia útil*.
-
-Posso te ajudar com mais alguma coisa?
-
-1️⃣ Orçamento  2️⃣ Serviços  3️⃣ Portfólio  4️⃣ Consultor`;
+Ou se preferir, digite *pular* para finalizar.`;
   }
 
-  // --- FLUXO DE PORTFÓLIO ---
-  if (estado === 'portfolio') {
-    if (mensagem === '1' || mensagem.includes('sim') || mensagem.includes('visita')) {
-      estados[de] = 'menu';
-      return `Ótimo! 🗓️ Um consultor vai entrar em contato para agendar a visita conforme sua disponibilidade.
-
-Mais alguma coisa que posso ajudar?`;
-    }
+  if (estado === 'orcamento_arquivo') {
     estados[de] = 'menu';
-    return saudacao();
+    return `Dados enviados com sucesso! 🚀
+
+Um de nossos especialistas entrará em contato em breve.
+⏱️ Tempo médio de retorno: *até 2 horas* em horário comercial.
+
+Digite *menu* para voltar ao início.`;
   }
 
-  // Fallback geral
+  // ==================== CONSULTOR ====================
+  if (estado === 'consultor_nome') {
+    const nome = mensagem.split(' ')[0];
+    estados[de] = 'menu';
+    return `Perfeito, *${nome}*! Já avisei a equipe. ⏳
+
+Um consultor assumirá esta conversa em instantes.
+
+🕐 Atendimento humano: *segunda a sexta, das 08h às 18h*
+
+Se precisar de algo mais, digite *menu*.`;
+  }
+
+  // Fallback
   estados[de] = 'menu';
-  return saudacao();
+  return menu();
 }
 
 module.exports = { processar };
